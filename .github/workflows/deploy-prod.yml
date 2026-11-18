@@ -15,9 +15,7 @@ jobs:
       - name: Préparer la configuration
         env:
           API_ENV_FILE: ${{ secrets.API_ENV }}
-        run: |
-          test -n "$API_ENV_FILE"
-          printf '%s\n' "$API_ENV_FILE" > .env
+        run: bash .github/scripts/prepare-env.sh
 
       - name: Construire les images
         run: docker compose build

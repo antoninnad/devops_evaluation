@@ -15,6 +15,7 @@ const pool = mysql.createPool({
 });
 
 const PRIORITIES = ['basse', 'moyenne', 'haute'];
+
 // Santé : utilisée par K8s et pour vérifier que la BDD répond
 app.get('/api/health', async (req, res) => {
   try {
@@ -32,13 +33,15 @@ app.get('/api/tasks', async (req, res) => {
   }
   try {
     const [rows] = await pool.query(
-      `SELECT id, title, done, priority,
-              DATE_FORMAT(due_date, '%Y-%m-%d') AS due_date,
-              (due_date < CURDATE() AND done = FALSE) AS overdue,
-              created_at
-         FROM tasks
-        ${priority ? 'WHERE priority = ?' : ''}
-        ORDER BY FIELD(priority, 'haute', 'moyenne', 'basse'), due_date IS NULL, due_date, id`,
+      `SELECT t.id, t.title, t.done, t.priority,
+              DATE_FORMAT(t.due_date, '%Y-%m-%d') AS due_date,
+              (t.due_date < CURDATE() AND t.done = FALSE) AS overdue,
+              c.name AS category,
+              t.created_at
+         FROM tasks t
+         LEFT JOIN categories c ON c.id = t.category_id
+        ${priority ? 'WHERE t.priority = ?' : ''}
+        ORDER BY FIELD(t.priority, 'haute', 'moyenne', 'basse'), t.due_date IS NULL, t.due_date, t.id`,
       priority ? [priority] : []
     );
     res.json(rows.map((t) => ({ ...t, done: Boolean(t.done), overdue: Boolean(t.overdue) })));
@@ -80,6 +83,16 @@ app.delete('/api/tasks/:id', async (req, res) => {
     const [result] = await pool.execute('DELETE FROM tasks WHERE id = ?', [req.params.id]);
     if (!result.affectedRows) return res.status(404).json({ error: 'Tâche introuvable.' });
     res.status(204).end();
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'database error' });
+  }
+});
+
+app.get('/api/categories', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT id, name FROM categories ORDER BY name');
+    res.json(rows);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'database error' });
