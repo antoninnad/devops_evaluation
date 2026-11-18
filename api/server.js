@@ -36,5 +36,18 @@ app.get('/api/tasks', async (req, res) => {
   }
 });
 
+
+
+app.get('/api/info', async (req, res) => {
+  res.json({
+
+    msg: "Nouveauté sur le sites",
+    
+
+
+
+  });
+})
+
 const PORT = Number(process.env.PORT) || 3000;
 app.listen(PORT, () => console.log(`API démarrée sur le port ${PORT}`));
