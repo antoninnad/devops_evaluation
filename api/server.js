@@ -14,6 +14,8 @@ const pool = mysql.createPool({
   connectionLimit: 10,
 });
 
+const PRIORITIES = ['basse', 'moyenne', 'haute'];
+
 // Santé : utilisée par K8s et pour vérifier que la BDD répond
 app.get('/api/health', async (req, res) => {
   try {
@@ -23,8 +25,9 @@ app.get('/api/health', async (req, res) => {
     res.status(503).json({ status: 'error', db: 'down' });
   }
 });
-const PRIORITIES = ['basse', 'moyenne', 'haute'];
 
+// GET /api/tasks?priority=haute  (filtre optionnel)
+// Tri : priorité, puis échéance la plus proche
 app.get('/api/tasks', async (req, res) => {
   const { priority } = req.query;
   if (priority && !PRIORITIES.includes(priority)) {
@@ -32,20 +35,21 @@ app.get('/api/tasks', async (req, res) => {
   }
   try {
     const [rows] = await pool.query(
-      `SELECT id, title, done, priority, created_at
+      `SELECT id, title, done, priority,
+              DATE_FORMAT(due_date, '%Y-%m-%d') AS due_date,
+              (due_date < CURDATE() AND done = FALSE) AS overdue,
+              created_at
          FROM tasks
         ${priority ? 'WHERE priority = ?' : ''}
-        ORDER BY FIELD(priority, 'haute', 'moyenne', 'basse'), id`,
+        ORDER BY FIELD(priority, 'haute', 'moyenne', 'basse'), due_date IS NULL, due_date, id`,
       priority ? [priority] : []
     );
-    res.json(rows.map((t) => ({ ...t, done: Boolean(t.done) })));
+    res.json(rows.map((t) => ({ ...t, done: Boolean(t.done), overdue: Boolean(t.overdue) })));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'database error' });
   }
-
 });
-
 
 const PORT = Number(process.env.PORT) || 3000;
 app.listen(PORT, () => console.log(`API démarrée sur le port ${PORT}`));
