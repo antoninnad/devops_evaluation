@@ -12,9 +12,16 @@
     <p id="result"></p>
     <form id="task-form">
       <input id="title" type="text" placeholder="Nouvelle tâche" aria-label="Nouvelle tâche" maxlength="255" required>
-      <button type="submit">Ajouter</button>
+      <button type="submit" disabled>Ajouter</button>
     </form>
     <p id="error" role="alert"></p>
+    <p id="counter" aria-live="polite"></p>
+    <label for="task-filter">Afficher</label>
+    <select id="task-filter">
+      <option value="all">Toutes les tâches</option>
+      <option value="todo">À faire</option>
+      <option value="done">Terminées</option>
+    </select>
     <ul id="tasks" aria-label="Liste des tâches"></ul>
   </main>
   <script src="/script.js" defer></script>

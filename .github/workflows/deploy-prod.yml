@@ -1,33 +1,59 @@
 name: Déploiement production
 
 on:
-  push:
-    branches: [Prod]
+  workflow_dispatch:
+    inputs:
+      validation_run:
+        description: Identifiant de l’exécution GitHub Actions réussie sur Val
+        required: true
+        type: string
 
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
 
 jobs:
-  test-before:
-    uses: ./.github/workflows/test-before.yml
-
-  docker:
-    needs: test-before
-    runs-on: self-hosted
+  verify:
+    runs-on: ubuntu-latest
     steps:
-      - name: Récupérer le code
-        uses: actions/checkout@v4
-
-      - name: Préparer la configuration
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Vérifier que la version Prod a été validée
         env:
-          API_ENV_FILE: ${{ secrets.API_ENV }}
-        run: bash .github/scripts/prepare-env.sh
-
-      - name: Construire les images
-        run: docker compose build
-
-      - name: Déployer les services
+          GH_TOKEN: ${{ github.token }}
+          VALIDATION_RUN: ${{ inputs.validation_run }}
         run: |
-          docker rm -f servingstaticpage || true
-          docker compose up -d --wait --wait-timeout 120
+          set -euo pipefail
+          if [[ "$GITHUB_REF" != refs/heads/Prod || ! "$VALIDATION_RUN" =~ ^[0-9]+$ ]]; then
+            echo "Choisis la branche Prod et saisis l’identifiant numérique d’une exécution Val."
+            exit 1
+          fi
+          workflow_id=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/validate-staging.yml" --jq .id)
+          val_sha=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$VALIDATION_RUN" |
+            jq -er --arg repo "$GITHUB_REPOSITORY" --argjson workflow "$workflow_id" '
+              select(.head_repository.full_name == $repo and .workflow_id == $workflow
+                and .head_branch == "Val" and .event == "push" and .conclusion == "success")
+              | .head_sha')
+          if [[ "$(git rev-parse "HEAD^{tree}")" != "$(git rev-parse "${val_sha}^{tree}")" ]]; then
+            echo "Le contenu de Prod doit être identique à celui testé sur Val."
+            exit 1
+          fi
 
-      - name: Vérifier l'API et MySQL
-        run: curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-all-errors http://localhost:3088/api/health
+  deploy:
+    needs: verify
+    runs-on: [self-hosted, kubernetes]
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: images-val
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.validation_run }}
+      - name: Déployer en Prod les images validées
+        run: bash .github/scripts/deploy-k8s.sh devops-prod images.txt
