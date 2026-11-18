@@ -1,8 +1,8 @@
 name: docker
 
-on: 
+on:
   push:
-    branches: [Dev,Val,Prod]
+    branches: [Prod]
 
 
 jobs:

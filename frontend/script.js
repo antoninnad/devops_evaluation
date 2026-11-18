@@ -77,3 +77,9 @@ form.addEventListener('submit', async (event) => {
 
 request('/api/tasks').then(tasks => tasks.forEach(showTask))
   .catch(err => { error.textContent = err.message; });
+
+request('/api/info').then(data => {
+  document.querySelector('#result').textContent = data.msg;
+}).catch(() => {
+  document.querySelector('#result').textContent = 'Impossible de charger les informations.';
+});
