@@ -106,4 +106,8 @@ app.get('/api/info', async (req, res) => {
 });
 
 const PORT = Number(process.env.PORT) || 3000;
-app.listen(PORT, () => console.log(`API démarrée sur le port ${PORT}`));
+if (require.main === module) {
+  app.listen(PORT, () => console.log(`API démarrée sur le port ${PORT}`));
+}
+
+module.exports = { app, pool };
