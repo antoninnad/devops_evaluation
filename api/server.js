@@ -15,7 +15,7 @@ const pool = mysql.createPool({
 });
 
 const PRIORITIES = ['basse', 'moyenne', 'haute'];
-
+"a"
 // Santé : utilisée par K8s et pour vérifier que la BDD répond
 app.get('/api/health', async (req, res) => {
   try {
@@ -26,8 +26,6 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// GET /api/tasks?priority=haute  (filtre optionnel)
-// Tri : priorité, puis échéance la plus proche
 app.get('/api/tasks', async (req, res) => {
   const { priority } = req.query;
   if (priority && !PRIORITIES.includes(priority)) {
