@@ -2,6 +2,7 @@
   "name": "devops-checks",
   "private": true,
   "scripts": {
+    "test": "npm --prefix api test",
     "lint": "eslint api frontend --max-warnings=0",
     "install-hooks": "git config core.hooksPath .githooks"
   },

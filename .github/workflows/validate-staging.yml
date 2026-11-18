@@ -10,7 +10,7 @@ jobs:
     uses: ./.github/workflows/test-before.yml
 
   docker:
-    needs: test-before
+    needs: [test-before, tests]
     runs-on: self-hosted
     steps:
       - name: Récupérer le code
@@ -31,3 +31,36 @@ jobs:
 
       - name: Vérifier l'API et MySQL
         run: curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-all-errors http://localhost:3088/api/health
+
+  tests:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: devops_test
+          MYSQL_USER: ci
+          MYSQL_PASSWORD: ci-password
+          MYSQL_ROOT_PASSWORD: ci-root-password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: '3306'
+      DB_NAME: devops_test
+      DB_USER: ci
+      DB_PASSWORD: ci-password
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+      - run: npm ci --prefix api
+      - run: npm --prefix api test
