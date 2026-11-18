@@ -6,7 +6,11 @@ on:
 
 
 jobs:
+  test-before:
+    uses: ./.github/workflows/test-before.yml
+
   docker:
+    needs: test-before
     runs-on: self-hosted
     steps:
       - name: Récupérer le code
