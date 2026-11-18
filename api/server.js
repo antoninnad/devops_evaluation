@@ -23,18 +23,29 @@ app.get('/api/health', async (req, res) => {
     res.status(503).json({ status: 'error', db: 'down' });
   }
 });
+const PRIORITIES = ['basse', 'moyenne', 'haute'];
 
 app.get('/api/tasks', async (req, res) => {
+  const { priority } = req.query;
+  if (priority && !PRIORITIES.includes(priority)) {
+    return res.status(400).json({ error: `priority doit valoir : ${PRIORITIES.join(', ')}` });
+  }
   try {
     const [rows] = await pool.query(
-      'SELECT id, title, done, created_at FROM tasks ORDER BY id'
+      `SELECT id, title, done, priority, created_at
+         FROM tasks
+        ${priority ? 'WHERE priority = ?' : ''}
+        ORDER BY FIELD(priority, 'haute', 'moyenne', 'basse'), id`,
+      priority ? [priority] : []
     );
     res.json(rows.map((t) => ({ ...t, done: Boolean(t.done) })));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'database error' });
   }
+
 });
+
 
 const PORT = Number(process.env.PORT) || 3000;
 app.listen(PORT, () => console.log(`API démarrée sur le port ${PORT}`));
