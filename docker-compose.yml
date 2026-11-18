@@ -1,4 +1,11 @@
 services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "3088:80"
+    depends_on:
+      - api
+
   db:
     build: ./database
     environment:

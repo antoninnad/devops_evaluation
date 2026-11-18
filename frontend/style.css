@@ -1,0 +1,9 @@
+body { font-family: sans-serif; max-width: 600px; margin: 3rem auto; padding: 0 1rem; }
+form { display: flex; gap: .5rem; }
+input[type="text"] { flex: 1; padding: .5rem; }
+button { cursor: pointer; padding: .5rem; }
+ul { padding: 0; list-style: none; }
+li { display: flex; align-items: center; gap: .75rem; padding: .5rem 0; border-bottom: 1px solid #ddd; }
+li span { flex: 1; overflow-wrap: anywhere; }
+li.done span { text-decoration: line-through; color: #666; }
+#error { color: #a00; }

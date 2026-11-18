@@ -36,5 +36,43 @@ app.get('/api/tasks', async (req, res) => {
   }
 });
 
+app.post('/api/tasks', async (req, res) => {
+  const title = typeof req.body?.title === 'string' ? req.body.title.trim() : '';
+  if (!title || title.length > 255) return res.status(400).json({ error: 'Le titre doit contenir entre 1 et 255 caractères.' });
+  try {
+    const [result] = await pool.execute('INSERT INTO tasks (title) VALUES (?)', [title]);
+    const [rows] = await pool.execute('SELECT id, title, done, created_at FROM tasks WHERE id = ?', [result.insertId]);
+    res.status(201).json({ ...rows[0], done: Boolean(rows[0].done) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'database error' });
+  }
+});
+
+app.patch('/api/tasks/:id', async (req, res) => {
+  if (typeof req.body?.done !== 'boolean') return res.status(400).json({ error: 'Le champ done doit être un booléen.' });
+  try {
+    const [result] = await pool.execute('UPDATE tasks SET done = ? WHERE id = ?', [req.body.done, req.params.id]);
+    if (!result.affectedRows) return res.status(404).json({ error: 'Tâche introuvable.' });
+    const [rows] = await pool.execute('SELECT id, title, done, created_at FROM tasks WHERE id = ?', [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: 'Tâche introuvable.' });
+    res.json({ ...rows[0], done: Boolean(rows[0].done) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'database error' });
+  }
+});
+
+app.delete('/api/tasks/:id', async (req, res) => {
+  try {
+    const [result] = await pool.execute('DELETE FROM tasks WHERE id = ?', [req.params.id]);
+    if (!result.affectedRows) return res.status(404).json({ error: 'Tâche introuvable.' });
+    res.status(204).end();
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'database error' });
+  }
+});
+
 const PORT = Number(process.env.PORT) || 3000;
 app.listen(PORT, () => console.log(`API démarrée sur le port ${PORT}`));

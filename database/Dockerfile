@@ -1,7 +1,7 @@
 FROM mysql:8.4
 
 # Exécuté uniquement au 1er démarrage, quand le volume est vide
-COPY init.sql /docker-entrypoint-initdb.d/01-init.sql
+COPY --chmod=644 init.sql /docker-entrypoint-initdb.d/01-init.sql
 
 EXPOSE 3306
 
