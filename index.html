@@ -6,16 +6,19 @@
     <title>Document</title>
 </head>
 <body>
-    <h1>Hello you are on my serv</h1>
 
     <p id="result">
 
     </p>
 
+    <h1>Hello you are on my serv</h1>
+
+    
+
 
     <script>
 
-        const apiUrl = "https://localhost:300";
+        const apiUrl = "https://localhost:3000";
 
 
         async function recupDonne() {
@@ -24,7 +27,7 @@
                 const response = await fetch(`${apiUrl}/info`)
 
                 if (!response.ok) {
-                    document.querySelector("$result").innerHTML = "Erreur appel api / vérifier que l'api à bien été crée";
+                    document.querySelector("#result").innerHTML = "Erreur appel api / vérifier que l'api à bien été crée";
                     throw new Error("Erreur appel api");
                 }
 
@@ -35,10 +38,10 @@
                 //mettre ce qu'on veut
 
                 // affichage
-                document.querySelector("$result").innerHTML = "Appel api succès";
+                document.querySelector("#result").innerHTML = data.msg;
 
             } catch (Erreur) {
-                document.querySelector("$result").innerHTML = "Erreur appel api / vérifier que l'api à bien été crée";
+                document.querySelector("#result").innerHTML = "Erreur appel api / vérifier que l'api à bien été crée";
             }
             
         }

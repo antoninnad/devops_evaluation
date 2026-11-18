@@ -1,0 +1,24 @@
+name: docker
+
+on: 
+  push:
+    branches: [Prod]
+
+
+jobs:
+  docker:
+    runs-on: self-hosted
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Construire l'image Docker
+        run: docker build -t servingstaticpage ./
+
+      - name: Remplacer le conteneur
+        run: |
+          docker rm -f servingstaticpage || true
+          docker run -d --restart unless-stopped \
+            --name servingstaticpage \
+            -p 3088:80 \
+            servingstaticpage
